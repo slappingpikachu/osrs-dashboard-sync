@@ -454,6 +454,34 @@ public class OsrsDataSyncPlugin extends Plugin
 		containersDirty = true;
 	}
 
+	/**
+	 * Reads the bank, inventory and equipment the client already holds. The change events above only report
+	 * changes, so after a start in the middle of a session (plugin switched on, client restarted with the bank
+	 * open) a withdrawal made while the plugin was off would otherwise stay unseen: the bank kept last session's
+	 * copy while the inventory had the item (seen 2026-11-03: a dragonfruit counted twice). The bank is only held
+	 * once it has been opened this login; until then last session's copy stays (merge).
+	 */
+	private void readContainers()
+	{
+		ItemContainer bankNow = client.getItemContainer(InventoryID.BANK);
+		if (bankNow != null)
+		{
+			bank = items(bankNow);
+			bankAt = System.currentTimeMillis();
+		}
+		ItemContainer invNow = client.getItemContainer(InventoryID.INV);
+		if (invNow != null)
+		{
+			inventory = items(invNow);
+		}
+		ItemContainer wornNow = client.getItemContainer(InventoryID.WORN);
+		if (wornNow != null)
+		{
+			equipment = items(wornNow);
+		}
+		containersDirty = true;
+	}
+
 	@Subscribe
 	public void onGrandExchangeOfferChanged(GrandExchangeOfferChanged event)
 	{
@@ -537,6 +565,7 @@ public class OsrsDataSyncPlugin extends Plugin
 		player = safeName(local.getName());
 		String shown = Text.toJagexName(local.getName());
 		SwingUtilities.invokeLater(() -> panel.setPlayer(shown));
+		readContainers();
 		storage.forget(); // write every file once this login, even if unchanged
 		questsDue = true;
 		progressDirty = true;
@@ -1130,6 +1159,7 @@ public class OsrsDataSyncPlugin extends Plugin
 				return;
 			}
 			scanQuests();
+			readContainers();
 			storage.forget(); // write every file, even if unchanged, so each gets a fresh "updated" time
 			progressDirty = containersDirty = killCountsDirty = clogDirty = true;
 			flush();
