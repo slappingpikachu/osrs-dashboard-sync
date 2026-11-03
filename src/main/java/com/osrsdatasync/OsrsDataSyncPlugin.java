@@ -3,6 +3,8 @@ package com.osrsdatasync;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.google.inject.Provides;
+import java.awt.Toolkit;
+import java.awt.datatransfer.StringSelection;
 import java.awt.image.BufferedImage;
 import java.time.Instant;
 import java.time.LocalTime;
@@ -269,7 +271,7 @@ public class OsrsDataSyncPlugin extends Plugin
 	protected void startUp()
 	{
 		storage = new Storage(this::getPluginDirectory, executor);
-		panel = new ExportPanel(this::export, this::openFolder);
+		panel = new ExportPanel(this::export, this::copyFolderPath);
 		storage.setOnSaved(() ->
 		{
 			String time = LocalTime.now().format(CLOCK);
@@ -565,6 +567,7 @@ public class OsrsDataSyncPlugin extends Plugin
 		player = safeName(local.getName());
 		String shown = Text.toJagexName(local.getName());
 		SwingUtilities.invokeLater(() -> panel.setPlayer(shown));
+		showFolder();
 		readContainers();
 		storage.forget(); // write every file once this login, even if unchanged
 		questsDue = true;
@@ -1171,10 +1174,21 @@ public class OsrsDataSyncPlugin extends Plugin
 		});
 	}
 
-	/** Open Folder button (Swing thread). */
-	private void openFolder()
+	/** Copy Folder Path button (Swing thread): the folder goes to the clipboard, to paste into a file browser. */
+	private void copyFolderPath()
 	{
-		clientThread.invoke(() -> storage.openFolder(player));
+		clientThread.invoke(() -> storage.folderPath(player, path -> SwingUtilities.invokeLater(() ->
+		{
+			Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(path), null);
+			panel.setFolder(path);
+			panel.message("Folder path copied");
+		})));
+	}
+
+	/** Shows the account's folder in the panel (client thread). */
+	private void showFolder()
+	{
+		storage.folderPath(player, path -> SwingUtilities.invokeLater(() -> panel.setFolder(path)));
 	}
 
 	// ---------------------------------------------------------------- helpers

@@ -15,7 +15,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.util.Filepath;
-import net.runelite.client.util.LinkBrowser;
 
 /**
  * Files under .runelite/plugin-data/osrsdatasync/&lt;player&gt;/. Every disk access, and turning data into
@@ -55,20 +54,21 @@ class Storage
 		executor.execute(task);
 	}
 
-	/** Opens the account's folder (or the plugin's folder when {@code player} is null) in the file browser. */
-	void openFolder(String player)
+	/**
+	 * Hands the account's folder (or the plugin's folder when {@code player} is null) to {@code then}, on the
+	 * executor. The plugin never opens it itself: opening files or folders from a plugin isn't allowed.
+	 */
+	void folderPath(String player, Consumer<String> then)
 	{
 		executor.execute(() ->
 		{
 			try
 			{
-				Filepath dir = player == null ? root.get() : folder(player);
-				dir.createDirectories();
-				LinkBrowser.open(dir.toString());
+				then.accept((player == null ? root.get() : folder(player)).toString());
 			}
 			catch (IOException | RuntimeException e)
 			{
-				log.warn("Could not open the folder", e);
+				log.warn("Could not find the folder", e);
 			}
 		});
 	}

@@ -11,7 +11,8 @@ leaves your computer.
 Open the **OSRS Data Sync** panel from the RuneLite sidebar:
 
 - **Export** reads everything again and saves all files immediately.
-- **Open Folder** opens the folder with your account's files.
+- **Copy Folder Path** copies the folder with your account's files, to paste into your file browser. The panel
+  also shows the folder.
 - The panel shows when the files were last saved or exported.
 
 By default, the plugin also saves changes automatically as they happen. To write files only when you select
